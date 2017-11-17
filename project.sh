@@ -144,7 +144,7 @@ run_project() {
     
     docker exec -it \
         "${DOCKER_RUNTIME_NAME}" \
-        bash -c "cd ${PLUGIN_NAME} && ajenti-dev-multitool --run-dev"
+        bash -c "ajenti-dev-multitool --run-dev"
 }
 
 
