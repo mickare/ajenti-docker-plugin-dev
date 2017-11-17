@@ -6,15 +6,20 @@ Ajenti dev commands will be wrapped and executed inside a docker image.
 ## Setup
 
 Create the docker image that is used to run the development environment.
-`./project.sh --setup`
+```./project.sh --setup```
 
 ## Usage
 
 1. Create plugin:
-    `./project.sh -n "Plugin"
+    `./project.sh -n "Plugin"`
 2. Build plugin:
-    `./project.sh -b "Plugin"
+    `./project.sh -b "Plugin"`
 3. Run ajenti with plugin:
-    `./project.sh -r "Plugin"
+    `./project.sh -r "Plugin"`
 
-Or build and run with one command: `./project.sh -b -r "Plugin"
+Or build and run with one command: `./project.sh -b -r "Plugin"`
+
+## ToDo
+
+- [ ] "?" Help in script.
+- [ ] Improve script to pass command args directly to `ajenti-dev-multitool` in the container.
