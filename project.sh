@@ -128,7 +128,7 @@ main() {
         fi
 
         PLUGIN_NAME="${POSITIONAL[0]}"
-        PLUGIN_NAME=echo "$PLUGIN_NAME" | sed -e "s/\s/\_/g" | tr '[:upper:]' '[:lower:]'
+        PLUGIN_NAME=$(echo "$PLUGIN_NAME" | sed -e "s/\s/\_/g" | tr '[:upper:]' '[:lower:]')
 
         
         if $NEW_PLUGIN; then
