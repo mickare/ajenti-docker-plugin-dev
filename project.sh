@@ -15,7 +15,7 @@ do
 key="$1"
 
 case $key in
-    --clean)
+    -c|--clean)
     CLEAN=true
     shift # past argument
     ;;
@@ -46,6 +46,8 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 
 DOCKER_NAME="ajenti_dev_environment"
 DOCKER_VERSION="latest"
+DOCKER_IMAGE="${DOCKER_NAME}:${DOCKER_VERSION}"
+DOCKER_RUNTIME_NAME="${DOCKER_NAME}"
 
 PROJECT_VOLUME="${CURDIR}/:/opt/ajenti/"
 
@@ -53,53 +55,95 @@ USER_ID=$(id -u)
 USER_GROUP=$(id -g)
 USER="${USER_ID}:${USER_GROUP}"
 
-project_clean() {
-    docker image rm -f "${DOCKER_NAME}:${DOCKER_VERSION}"
+start_environment() {
+    if ! $(docker ps -a | grep -q "${DOCKER_RUNTIME_NAME}"); then
+        docker create -t \
+            --network=host \
+            --name="${DOCKER_RUNTIME_NAME}" \
+            --volume="${PROJECT_VOLUME}" \
+            "${DOCKER_IMAGE}"
+    fi
+    if ! $(docker ps | grep -q "${DOCKER_RUNTIME_NAME}"); then
+        # Only start container if not already running.
+        docker start "${DOCKER_RUNTIME_NAME}"
+    fi 
 }
 
-project_setup() {
+stop_environment() {
+    docker stop "${DOCKER_RUNTIME_NAME}" ;
+}
+
+clean_environment() {
+    docker rm -f "${DOCKER_RUNTIME_NAME}"
+}
+
+setup_project() {
 
     docker build --rm \
         --no-cache=false \
-        -t "${DOCKER_NAME}:${DOCKER_VERSION}" \
+        -t "${DOCKER_IMAGE}" \
         --network=host \
         --build-arg USER_ID=${USER} \
         -f="dev_environment/Dockerfile" \
         .
 }
 
-project_new_plugin() {
+new_plugin() {
 
     PLUGIN_NAME="$1"
 
-    docker run -it --rm \
-        --volume="${PROJECT_VOLUME}" \
+    echo "Creating new plugin \"$PLUGIN_NAME\"."
+
+    # docker run -it --rm \
+    #     --volume="${PROJECT_VOLUME}" \
+    #     --network=host \
+    #     --user=${USER} \
+    #     "${DOCKER_IMAGE}" \
+    #     ajenti-dev-multitool --new-plugin "${PLUGIN_NAME}"
+
+    docker exec -it \
         --user=${USER} \
-        "${DOCKER_NAME}:${DOCKER_VERSION}" \
+        "${DOCKER_RUNTIME_NAME}" \
         ajenti-dev-multitool --new-plugin "${PLUGIN_NAME}"
 }
 
 
-project_build() {
+build_plugin() {
 
     PLUGIN_NAME="$1"
 
-    docker run -it --rm \
-        --volume="${PROJECT_VOLUME}" \
+    echo "Building plugin \"$PLUGIN_NAME\"."
+
+    # docker run -it --rm \
+    #     --volume="${PROJECT_VOLUME}" \
+    #     --network=host \
+    #     --user=${USER} \
+    #     "${DOCKER_IMAGE}" \
+    #     bash -c "cd ${PLUGIN_NAME} && ajenti-dev-multitool --build"
+
+    docker exec -it \
         --user=${USER} \
-        "${DOCKER_NAME}:${DOCKER_VERSION}" \
-        bash -c "cd ${PLUGIN_NAME} && ajenti-dev-multitool --build"
+        "${DOCKER_RUNTIME_NAME}" \
+        bash -c "cd ${PLUGIN_NAME} && ajenti-dev-multitool --rebuild"
+
 }
 
 
-project_run() {
+run_project() {
 
     PLUGIN_NAME="$1"
 
-    docker run -it --rm \
-        --volume="${PROJECT_VOLUME}" \
-        -p 8000:8000 \
-        "${DOCKER_NAME}:${DOCKER_VERSION}" \
+    echo "Running with plugin \"$PLUGIN_NAME\"."
+
+    # docker run -it --rm \
+    #     --volume="${PROJECT_VOLUME}" \
+    #     --network=host \
+    #     -p 8000:8000 \
+    #     "${DOCKER_IMAGE}" \
+    #     bash -c "ajenti-dev-multitool --run-dev"
+    
+    docker exec -it \
+        "${DOCKER_RUNTIME_NAME}" \
         bash -c "cd ${PLUGIN_NAME} && ajenti-dev-multitool --run-dev"
 }
 
@@ -107,11 +151,11 @@ project_run() {
 main() {
 
     if $CLEAN; then
-        project_clean
+        clean_environment
     fi
 
     if $SETUP; then
-        project_setup
+        setup_project
     fi
 
     if ! $(docker image ls | grep -q "${DOCKER_NAME}"); then
@@ -128,20 +172,23 @@ main() {
         fi
 
         PLUGIN_NAME="${POSITIONAL[0]}"
-        PLUGIN_NAME=echo "$PLUGIN_NAME" | sed -e "s/\s/\_/g" | tr '[:upper:]' '[:lower:]'
+        PLUGIN_NAME=$(echo "$PLUGIN_NAME" | sed -e "s/\s/\_/g" | tr '[:upper:]' '[:lower:]')
 
-        
+        start_environment
+
         if $NEW_PLUGIN; then
-            project_new_plugin "${PLUGIN_NAME}"
+            new_plugin "${PLUGIN_NAME}"
         fi
 
         if $BUILD; then
-            project_build "${PLUGIN_NAME}"
+            build_plugin "${PLUGIN_NAME}"
         fi
 
         if $RUN; then
-            project_run "${PLUGIN_NAME}"
+            run_project "${PLUGIN_NAME}"
         fi
+
+        stop_environment
 
     fi
 }
