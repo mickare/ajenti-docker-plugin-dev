@@ -3,6 +3,12 @@
 Bootstrap to get a full ajenti plugin dev environment up and running.
 Ajenti dev commands will be wrapped and executed inside a docker image.
 
+## Warning
+
+DON'T name your plugin with an underscore in the name. At the moment this will break Ajenti.
+
+So instead "test_plugin" name your plugin "test plugin".
+
 ## Setup
 
 Create the docker image that is used to run the development environment.

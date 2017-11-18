@@ -1,4 +1,6 @@
-FROM ubuntu:latest as ajanti_base
+FROM ubuntu:16.04 as ajanti_base
+
+WORKDIR /opt/ajenti
 
 RUN apt-get update \
 	&& apt-get install -y \
@@ -6,6 +8,10 @@ RUN apt-get update \
 	&& wget https://raw.githubusercontent.com/ajenti/ajenti/master/scripts/install.sh -O- | bash - \
 	&& rm -rf /var/lib/apt/lists/*
 
+RUN pip install \
+	setuptools \
+	gevent==1.2.1 \
+	--upgrade
 
 ###########################################
 # Install development environment
@@ -33,9 +39,9 @@ RUN pip install \
 	ajenti-dev-multitool
 
 ARG USER_ID
-RUN echo "User: $USER_ID" && mkdir /opt/ajenti && chown $USER_ID -R /opt/ajenti
+RUN echo "User: $USER_ID" && mkdir -p /opt/ajenti && chown $USER_ID -R /opt/ajenti
 
-WORKDIR /opt/ajenti
+
 
 # Ajenti needs root
 # USER $USER_ID

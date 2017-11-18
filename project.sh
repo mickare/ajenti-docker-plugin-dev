@@ -91,6 +91,7 @@ setup_project() {
 new_plugin() {
 
     PLUGIN_NAME="$1"
+    PLUGIN_DIR="$2"
 
     echo "Creating new plugin \"$PLUGIN_NAME\"."
 
@@ -111,6 +112,7 @@ new_plugin() {
 build_plugin() {
 
     PLUGIN_NAME="$1"
+    PLUGIN_DIR="$2"
 
     echo "Building plugin \"$PLUGIN_NAME\"."
 
@@ -124,7 +126,7 @@ build_plugin() {
     docker exec -it \
         --user=${USER} \
         "${DOCKER_RUNTIME_NAME}" \
-        bash -c "cd ${PLUGIN_NAME} && ajenti-dev-multitool --rebuild"
+        bash -c "cd ${PLUGIN_DIR} && ajenti-dev-multitool --build"
 
 }
 
@@ -132,6 +134,7 @@ build_plugin() {
 run_project() {
 
     PLUGIN_NAME="$1"
+    PLUGIN_DIR="$2"
 
     echo "Running with plugin \"$PLUGIN_NAME\"."
 
@@ -144,7 +147,7 @@ run_project() {
     
     docker exec -it \
         "${DOCKER_RUNTIME_NAME}" \
-        bash -c "ajenti-dev-multitool --run-dev"
+        bash -c "cd ${PLUGIN_DIR} && ajenti-dev-multitool --run-dev"
 }
 
 
@@ -172,20 +175,20 @@ main() {
         fi
 
         PLUGIN_NAME="${POSITIONAL[0]}"
-        PLUGIN_NAME=$(echo "$PLUGIN_NAME" | sed -e "s/\s/\_/g" | tr '[:upper:]' '[:lower:]')
+        PLUGIN_DIR=$(echo "$PLUGIN_NAME" | sed -e "s/\s/\_/g" | tr '[:upper:]' '[:lower:]')
 
         start_environment
 
         if $NEW_PLUGIN; then
-            new_plugin "${PLUGIN_NAME}"
+            new_plugin "${PLUGIN_NAME}" "${PLUGIN_DIR}"
         fi
 
         if $BUILD; then
-            build_plugin "${PLUGIN_NAME}"
+            build_plugin "${PLUGIN_NAME}" "${PLUGIN_DIR}"
         fi
 
         if $RUN; then
-            run_project "${PLUGIN_NAME}"
+            run_project "${PLUGIN_NAME}" "${PLUGIN_DIR}"
         fi
 
         stop_environment
